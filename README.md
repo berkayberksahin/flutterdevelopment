@@ -1,4 +1,4 @@
-## 🇹🇷 
+## TR 
 Bu proje, üniversite 1. sınıfta UML diyagramlarıyla tasarladığım ToDo uygulamasının Flutter kullanılarak yeniden kodlanmış halidir.
 
 ## EN
