@@ -52,23 +52,39 @@ class _AnaSayfaState extends State<AnaSayfa> {
             itemBuilder: (context, index) {
               final gorev = bugunGorevler[index];
               return Card(
+                color: gorev['tamamlandi'] ? Colors.grey[200] : Colors.white,
+                elevation: gorev['tamamlandi'] ? 0 : 2,
                 child: ListTile(
                   leading: Checkbox(
                     value: gorev['tamamlandi'],
                     onChanged: (val) {
                       setState(() {
                         gorev['tamamlandi'] = val!;
+                        _sayfalar[0] = _buildGorevSayfasi(); // yenileme
                       });
                     },
                   ),
-                  title: Text(gorev['baslik']),
-                  subtitle: Text(gorev['saat']),
+                  title: Text(
+                    gorev['baslik'],
+                    style: TextStyle(
+                      decoration: gorev['tamamlandi']
+                          ? TextDecoration.lineThrough
+                          : null,
+                      color: gorev['tamamlandi'] ? Colors.grey : Colors.black,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  subtitle: Text(
+                    gorev['saat'],
+                    style: TextStyle(
+                      color: gorev['tamamlandi'] ? Colors.grey : Colors.black54,
+                    ),
+                  ),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete),
                     onPressed: () {
                       setState(() {
                         gorevler.remove(gorev);
-
                         _sayfalar[0] = _buildGorevSayfasi();
                       });
                     },
@@ -128,6 +144,7 @@ class _AnaSayfaState extends State<AnaSayfa> {
                   onTap: () {
                     setState(() {
                       selectedDateIndex = index;
+                      _sayfalar[0] = _buildGorevSayfasi();
                     });
                   },
                   child: Container(
@@ -156,27 +173,66 @@ class _AnaSayfaState extends State<AnaSayfa> {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           String baslik = '';
-          String saat = '';
+          TimeOfDay? secilenSaat;
+          int secilenTarihIndex = selectedDateIndex;
+
+          TextEditingController saatController = TextEditingController();
 
           showDialog(
             context: context,
             builder: (BuildContext context) {
               return AlertDialog(
-                title: const Text("Yeni Görev Ekle"),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
+                title: Row(
                   children: [
-                    TextField(
-                      decoration:
-                          const InputDecoration(labelText: 'Görev Başlığı'),
-                      onChanged: (value) => baslik = value,
-                    ),
-                    TextField(
-                      decoration:
-                          const InputDecoration(labelText: 'Saat (örn: 14:00)'),
-                      onChanged: (value) => saat = value,
-                    ),
+                    Icon(Icons.add_task, color: Colors.deepPurple),
+                    SizedBox(width: 8),
+                    Text("Yeni Görev Ekle"),
                   ],
+                ),
+                content: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextField(
+                        decoration:
+                            const InputDecoration(labelText: 'Görev Başlığı'),
+                        onChanged: (value) => baslik = value,
+                      ),
+                      TextField(
+                        controller: saatController,
+                        readOnly: true,
+                        decoration:
+                            const InputDecoration(labelText: 'Saat Seç'),
+                        onTap: () async {
+                          final TimeOfDay? picked = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay.now(),
+                          );
+                          if (picked != null) {
+                            setState(() {
+                              secilenSaat = picked;
+                              saatController.text = picked
+                                  .format(context); // HH:MM formatında göster
+                            });
+                          }
+                        },
+                      ),
+                      SizedBox(height: 12),
+                      DropdownButtonFormField<int>(
+                        value: secilenTarihIndex,
+                        decoration: InputDecoration(labelText: 'Tarih Seç'),
+                        items: List.generate(tarihler.length, (index) {
+                          return DropdownMenuItem(
+                            value: index,
+                            child: Text(tarihler[index]),
+                          );
+                        }),
+                        onChanged: (val) {
+                          secilenTarihIndex = val!;
+                        },
+                      ),
+                    ],
+                  ),
                 ),
                 actions: [
                   TextButton(
@@ -186,12 +242,12 @@ class _AnaSayfaState extends State<AnaSayfa> {
                   ElevatedButton(
                     child: const Text("Ekle"),
                     onPressed: () {
-                      if (baslik.isNotEmpty && saat.isNotEmpty) {
+                      if (baslik.isNotEmpty && secilenSaat != null) {
                         setState(() {
                           gorevler.add({
                             'baslik': baslik,
-                            'saat': saat,
-                            'tarih': tarihler[selectedDateIndex],
+                            'saat': secilenSaat!.format(context),
+                            'tarih': tarihler[secilenTarihIndex],
                             'tamamlandi': false,
                           });
                           _sayfalar[0] = _buildGorevSayfasi();
